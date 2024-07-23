@@ -9,117 +9,27 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const pg_1 = require("pg");
-// Connection string for PostgreSQL
-const connectionString = 'postgresql://example_owner:bpXemxKVZ9h0@ep-shy-recipe-a5cpzfqv.us-east-2.aws.neon.tech/example?sslmode=require';
-// Function to insert user data into the database
-function insertUser(username, email, password) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const client = new pg_1.Client({
-            connectionString: connectionString,
-        });
-        try {
-            yield client.connect();
-            // Check if user with the same username already exists
-            const checkQuery = 'SELECT * FROM users WHERE username = $1';
-            const checkValues = [username];
-            const checkResult = yield client.query(checkQuery, checkValues);
-            if (checkResult.rows.length > 0) {
-                console.log(`User with username '${username}' already exists.`);
-                return null;
-            }
-            // Insert new user
-            const insertQuery = `
-            INSERT INTO users (username, email, password)
-            VALUES ($1, $2, $3)
-            RETURNING *;
-        `;
-            const insertValues = [username, email, password];
-            const result = yield client.query(insertQuery, insertValues);
-            console.log('User inserted:', result.rows[0]);
-            return result.rows[0];
-        }
-        catch (err) {
-            console.error('Error during inserting user:', err);
-            throw err;
-        }
-        finally {
-            yield client.end();
-        }
-    });
-}
-// Function to fetch user data from the database given an email
-function getUser(email) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const client = new pg_1.Client({
-            connectionString: connectionString,
-        });
-        try {
-            yield client.connect();
-            const query = 'SELECT * FROM users WHERE email = $1';
-            const values = [email];
-            const result = yield client.query(query, values);
-            if (result.rows.length > 0) {
-                console.log('User found:', result.rows[0]);
-                return result.rows[0];
-            }
-            else {
-                console.log('No user found with the given email.');
-                return null;
-            }
-        }
-        catch (err) {
-            console.error('Error during fetching user:', err);
-            throw err;
-        }
-        finally {
-            yield client.end();
-        }
-    });
-}
-// Function to delete a user from the database
-function deleteUser(email) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const client = new pg_1.Client({
-            connectionString: connectionString,
-        });
-        try {
-            yield client.connect();
-            // Delete user by email
-            const query = 'DELETE FROM users WHERE email = $1 RETURNING *';
-            const values = [email];
-            const result = yield client.query(query, values);
-            // Type guard to ensure rowCount is a number
-            const rowCount = result.rowCount;
-            if (rowCount > 0) {
-                console.log('User deleted:', result.rows[0]);
-            }
-            else {
-                console.log('No user found with the given email.');
-            }
-        }
-        catch (err) {
-            console.error('Error during deleting user:', err);
-            throw err;
-        }
-        finally {
-            yield client.end();
-        }
-    });
-}
-// Example usage
+const createTables_1 = require("./database/createTables");
+const insertUser_1 = require("./database/insertUser");
+const insertAddress_1 = require("./database/insertAddress");
+const getUser_1 = require("./database/getUser");
+const updateUserEmail_1 = require("./database/updateUserEmail");
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // Uncomment the following lines as needed to test the functions
-            // Insert users
-            // await insertUser('john_doe', 'john@example.com', 'securepassword123');
-            // await insertUser('Balaji Naik', 'kbalaji@example.com', 'balaji15');
-            // Retrieve users
-            // await getUser('john@example.com');
-            // await getUser('kbalaji@example.com');
-            // Delete a user
-            yield deleteUser('john@example.com');
+            // Create tables
+            yield (0, createTables_1.default)();
+            // Insert a user and an address
+            const user = yield (0, insertUser_1.default)('john_doe', 'john@example.com', 'securepassword123');
+            if (user) {
+                yield (0, insertAddress_1.default)(user.id, 'New York', 'USA', '123 Main St', '10001');
+            }
+            // Fetch the user
+            yield (0, getUser_1.default)('john@example.com');
+            // Update the user's email
+            yield (0, updateUserEmail_1.default)('john_doe', 'john_doe@example.com');
+            // Delete the user
+            // await deleteUser('john_doe@example.com');
         }
         catch (err) {
             console.error('Error:', err);
